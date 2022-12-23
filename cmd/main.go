@@ -1,12 +1,9 @@
 package main
 
 import (
-	"context"
 	"fmt"
-	"net"
-	"time"
 
-	"github.com/ClickHouse/clickhouse-go/v2"
+	_ "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/abdukhashimov/integration/config"
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -19,43 +16,27 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-
-	conn, err := clickhouse.Open(&clickhouse.Options{
-		Addr: []string{"127.0.0.1:8123"},
-		Auth: clickhouse.Auth{
-			Database: "default",
-			Username: "default",
-			Password: "",
-		},
-		DialContext: func(ctx context.Context, addr string) (net.Conn, error) {
-			var d net.Dialer
-			return d.DialContext(ctx, "tcp", addr)
-		},
-		Debug: true,
-		Debugf: func(format string, v ...interface{}) {
-			fmt.Printf(format, v)
-		},
-		Settings: clickhouse.Settings{
-			"max_execution_time": 60,
-		},
-		Compression: &clickhouse.Compression{
-			Method: clickhouse.CompressionLZ4,
-		},
-		DialTimeout:      time.Duration(10) * time.Second,
-		MaxOpenConns:     5,
-		MaxIdleConns:     5,
-		ConnMaxLifetime:  time.Duration(10) * time.Minute,
-		ConnOpenStrategy: clickhouse.ConnOpenInOrder,
-		BlockBufferSize:  10,
-	})
+	fmt.Println(db)
+	err = ConnectDSN()
 	if err != nil {
-		panic(err)
+		fmt.Println(err.Error())
+	}
+}
+
+func ConnectDSN() error {
+	conn, err := sqlx.Open("clickhouse", fmt.Sprintf("clickhouse://%s:%d?username=%s&password=%s", "localhost", 9000, "default", ""))
+	if err != nil {
+		return err
 	}
 
-	err = conn.Ping(context.Background())
+	rows, err := conn.Query("select * from towns")
 	if err != nil {
-		panic(err)
+		return err
 	}
 
-	fmt.Println(db, conn)
+	for rows.Next() {
+		fmt.Println(rows)
+	}
+
+	return conn.Ping()
 }
