@@ -11,13 +11,13 @@ import (
 
 func main() {
 	cfg := config.Load()
-	psqlConnString := cfg.MakePSQLConnString()
-	db, err := sqlx.Connect("postgres", psqlConnString)
+
+	db, err := sqlx.Connect("postgres", cfg.PsqlConfig.ConnString)
 	if err != nil {
 		panic(err)
 	}
 
-	conn, err := sqlx.Open("clickhouse", fmt.Sprintf("clickhouse://%s:%d?username=%s&password=%s", "localhost", 9000, "default", ""))
+	conn, err := sqlx.Open("clickhouse", cfg.Clickhouse.ConnString)
 	if err != nil {
 		panic(err)
 	}
