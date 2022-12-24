@@ -2,6 +2,7 @@ package cron
 
 import (
 	"github.com/abdukhashimov/exporter_psql_clickhouse/pkg/exporter"
+	"github.com/abdukhashimov/exporter_psql_clickhouse/pkg/logger"
 	"github.com/robfig/cron/v3"
 )
 
@@ -14,15 +15,14 @@ func New(exporter exporter.Exporter) *CronJob {
 	return &CronJob{exporter: exporter, cronJob: cron.New()}
 }
 
-func (c *CronJob) RunTableExporter(cronPeriod string) error {
-	_, err := c.cronJob.AddFunc(cronPeriod, c.runPsqlTableExporterToClickHouse)
+func (c *CronJob) RunTableExporter(cronPeriod string, tableName string) error {
+	_, err := c.cronJob.AddFunc(cronPeriod, func() {
+		err := c.exporter.Export(tableName)
+		logger.Log.Error("failed to run the given function", err)
+	})
 	if err != nil {
 		return err
 	}
 
 	return nil
-}
-
-func (c *CronJob) runPsqlTableExporterToClickHouse() {
-	// TODO: execute exporter
 }
