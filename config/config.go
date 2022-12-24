@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/Netflix/go-env"
@@ -52,8 +53,8 @@ func Load() *Config {
 	var cfg Config
 
 	err := godotenv.Load()
-	if err != nil {
-		panic(err)
+	if err != nil && !os.IsNotExist(err) {
+		log.Println(".env file is not found")
 	}
 
 	appMode := getAppMode()

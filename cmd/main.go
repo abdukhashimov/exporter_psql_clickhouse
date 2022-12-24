@@ -1,47 +1,22 @@
 package main
 
 import (
+	"context"
 	"fmt"
-	"log"
+	"os"
+	"os/signal"
+	"sync"
+	"time"
 
+	_ "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/abdukhashimov/exporter_psql_clickhouse/config"
 	"github.com/abdukhashimov/exporter_psql_clickhouse/pkg/logger"
 	"github.com/abdukhashimov/exporter_psql_clickhouse/pkg/logger/factory"
 	"github.com/jmoiron/sqlx"
-	"github.com/sevlyar/go-daemon"
-
-	_ "github.com/ClickHouse/clickhouse-go/v2"
 	_ "github.com/lib/pq"
 )
 
-func main() {
-	cntxt := &daemon.Context{
-		PidFileName: "sample.pid",
-		PidFilePerm: 0644,
-		LogFileName: "logs/sample.log",
-		LogFilePerm: 0640,
-		WorkDir:     "./",
-		Umask:       027,
-		Args:        []string{"[go-daemon sample]"},
-	}
-
-	d, err := cntxt.Reborn()
-	if err != nil {
-		log.Fatal("Unable to run: ", err)
-	}
-	if d != nil {
-		return
-	}
-
-	defer cntxt.Release() //nolint:all
-
-	log.Print("- - - - - - - - - - - - - - -")
-	log.Print("daemon started")
-
-	serve()
-}
-
-func serve() {
+func init() {
 	cfg := config.Load()
 
 	log, err := factory.Build(&cfg.Logging)
@@ -50,6 +25,8 @@ func serve() {
 	}
 
 	logger.SetLogger(log)
+
+	logger.Log.Info("set logger successfully...")
 
 	db, err := sqlx.Connect("postgres", cfg.PsqlConfig.ConnString)
 	if err != nil {
@@ -62,4 +39,33 @@ func serve() {
 	}
 
 	fmt.Println(db, conn)
+}
+
+func main() {
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt)
+
+	<-c
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*time.Duration(7))
+	defer cancel()
+
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func(wg *sync.WaitGroup) {
+		logger.Log.Info("shutting down")
+
+		logger.Log.Info("shutdown successfully called")
+
+		wg.Done()
+	}(&wg)
+
+	go func() {
+		wg.Wait()
+		cancel()
+	}()
+
+	<-ctx.Done()
+	os.Exit(0)
 }
