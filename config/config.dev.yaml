@@ -1,0 +1,16 @@
+project:
+  name: &projectName Exporter PSQL to Clickhouse DEV
+  version: 1.0.0
+  timeout: 9
+  swagger_enabled: true
+  max_body_mb: 20
+  cache_timeout: 30
+logging:
+  projectName: *projectName
+  code: logrus
+  encoding: console
+  level: debug
+  dateTimeFormat: 2006-01-02 15:04:05
+  dateFormat: 2006-01-02
+  enableCaller: false
+  devMode: true
