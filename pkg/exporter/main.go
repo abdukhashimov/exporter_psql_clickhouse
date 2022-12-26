@@ -29,11 +29,12 @@ type Export struct {
 	tbBot      *tgbotapi.BotAPI
 }
 
-func New(psqlConn, cHouseConn *sqlx.DB, cfg *config.Config) Exporter {
+func New(psqlConn, cHouseConn *sqlx.DB, cfg *config.Config, bot *tgbotapi.BotAPI) Exporter {
 	return &Export{
 		psqlConn:   psqlConn,
 		cHouseConn: cHouseConn,
 		cfg:        cfg,
+		tbBot:      bot,
 	}
 }
 
