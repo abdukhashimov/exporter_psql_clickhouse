@@ -1,10 +1,8 @@
 package exporter
 
 import (
-	"context"
 	"fmt"
 	"math"
-	"time"
 
 	"github.com/abdukhashimov/exporter_psql_clickhouse/config"
 	"github.com/abdukhashimov/exporter_psql_clickhouse/pkg/logger"
@@ -41,7 +39,7 @@ func New(psqlConn, cHouseConn *sqlx.DB, cfg *config.Config, bot *tgbotapi.BotAPI
 var (
 	countTransactions      = "select count(1) from %s;"
 	selectListofIds        = "select code from %s limit $1 offset $2;"
-	transferDataQuery      = "insert into %s (code, article, name, department) select code, article, name, department from postgresql('postgres-container:5432', 'sample', 'towns', 'postgres', 'postgres') LIMIT $1 OFFSET $2;"
+	transferDataQuery      = "insert into towns (code, article, name, department) select code, article, name, department from postgresql('postgres-container:5432', 'sample', 'towns', 'postgres', 'postgres') LIMIT $1 OFFSET $2"
 	updateManyTransactions = "update %s set soft_delete = true where code in (?);"
 )
 
@@ -52,8 +50,6 @@ func (e *Export) Export(tableName string) error {
 	)
 
 	logger.Log.Info("exporter started")
-	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(7)*time.Second)
-	defer cancel()
 
 	countRow := e.psqlConn.QueryRow(addTableName(countTransactions, tableName))
 	err := countRow.Scan(&rowCount)
@@ -69,17 +65,7 @@ func (e *Export) Export(tableName string) error {
 			id  string
 		)
 
-		cHTx, err := e.cHouseConn.BeginTx(ctx, nil)
-		if err != nil {
-			return err
-		}
-
-		tx, err := e.psqlConn.BeginTx(ctx, nil)
-		if err != nil {
-			return err
-		}
-
-		rows, err := tx.Query(addTableName(selectListofIds, tableName), transferRowCount, row)
+		rows, err := e.psqlConn.Query(addTableName(selectListofIds, tableName), transferRowCount, row)
 		if err != nil {
 			return err
 		}
@@ -93,9 +79,8 @@ func (e *Export) Export(tableName string) error {
 			ids = append(ids, id)
 		}
 
-		_, err = cHTx.ExecContext(
-			ctx,
-			addTableName(transferDataQuery, tableName),
+		_, err = e.cHouseConn.Exec(
+			transferDataQuery,
 			transferRowCount,
 			row,
 		)
@@ -103,38 +88,13 @@ func (e *Export) Export(tableName string) error {
 			return err
 		}
 
-		err = cHTx.Commit()
-		if err != nil {
-			err = cHTx.Rollback()
-			if err != nil {
-				return err
-			}
-		}
-
 		qry, args, err := sqlx.In(addTableName(updateManyTransactions, tableName), ids)
 		if err != nil {
 			return err
 		}
 
-		if _, err = tx.Exec(qry, args); err != nil {
-			err := tx.Rollback()
-			if err != nil {
-				cHTx.Rollback()
-				return err
-			}
-
-			err = cHTx.Rollback()
-			if err != nil {
-				return err
-			}
-		}
-
-		err = tx.Commit()
-		if err != nil {
-			err = tx.Rollback()
-			if err != nil {
-				return err
-			}
+		if _, err = e.psqlConn.Exec(qry, args); err != nil {
+			return err
 		}
 
 		logger.Log.Infof("successfully transferred from [%d - %d)", row, row+transferRowCount)
