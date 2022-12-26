@@ -38,15 +38,14 @@ func New(psqlConn, cHouseConn *sqlx.DB, cfg *config.Config, bot *tgbotapi.BotAPI
 
 var (
 	countTransactions      = "select count(1) from %s;"
-	selectListofIds        = "select code from %s limit $1 offset $2;"
+	selectListofIds        = "select code from %s WHERE soft_delete=false limit $1 offset $2"
 	transferDataQuery      = "insert into towns (code, article, name, department) select code, article, name, department from postgresql('postgres-container:5432', 'sample', 'towns', 'postgres', 'postgres') LIMIT $1 OFFSET $2"
 	updateManyTransactions = "update %s set soft_delete = true where code in (?);"
 )
 
 func (e *Export) Export(tableName string) error {
 	var (
-		rowCount            int
-		successfullRowCount int
+		rowCount int
 	)
 
 	logger.Log.Info("exporter started")
@@ -98,9 +97,8 @@ func (e *Export) Export(tableName string) error {
 		}
 
 		logger.Log.Infof("successfully transferred from [%d - %d)", row, row+transferRowCount)
-		successfullRowCount += row
 
-		message := tgbotapi.NewMessage(e.cfg.Exporter.TelegramBotChannelID, fmt.Sprintf("%d/%d", successfullRowCount, rowCount))
+		message := tgbotapi.NewMessage(e.cfg.Exporter.TelegramBotChannelID, fmt.Sprintf("%d/%d", row, rowCount))
 		_, err = e.tbBot.Send(message)
 		if err != nil {
 			logger.Log.Error("failed to publish the message to telegram chat", err)
