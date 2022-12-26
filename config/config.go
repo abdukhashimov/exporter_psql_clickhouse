@@ -38,7 +38,7 @@ type Config struct {
 
 	Exporter struct {
 		TableName            string `env:"EXPORTING_TABLE_NAME"`
-		ExportPerid          string `env:"EXPORTING_PERIOD,default='*/1 * * * *'"`
+		ExportPerid          string `env:"EXPORTING_PERIOD,default=*/1 * * * *"`
 		TelegramBotToken     string `env:"EXPORTING_BOT_TOKEN"`
 		TelegramBotChannelID int64  `env:"EXPORTING_CHANNEL_ID"`
 	}
