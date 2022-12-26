@@ -47,6 +47,7 @@ func (e *Export) Export(tableName string) error {
 		rowCount int
 	)
 
+	logger.Log.Info("exporter started")
 	ctx, cancel := context.WithTimeout(context.Background(), time.Duration(7)*time.Second)
 	defer cancel()
 
