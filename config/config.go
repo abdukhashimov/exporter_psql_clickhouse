@@ -37,8 +37,8 @@ type Config struct {
 	}
 
 	Network struct {
-		PsqlHost string `env:"PSQL_HOST,default=postgres-container"`
-		PsqlPort int    `env:"PSQL_PORT,default=5432"`
+		PsqlHost string `env:"PSQL_NETWORK_HOST,default=postgres-container"`
+		PsqlPort int    `env:"PSQL_NETWORK_PORT,default=5432"`
 
 		PsqlAddress string
 	}
