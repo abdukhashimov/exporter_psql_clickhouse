@@ -51,7 +51,7 @@ type Config struct {
 	}
 
 	Clickhouse struct {
-		Host string `env:"CLICKHOUSE_ADDRESS,default=localhost"`
+		Host string `env:"CLICKHOUSE_HOST,default=localhost"`
 		Port int    `env:"CLICKHOUSE_PORT,default=9000"`
 		Auth struct {
 			Database string `env:"CLICKHOUSE_DATABASE,default=default"`
