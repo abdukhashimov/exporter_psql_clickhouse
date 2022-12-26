@@ -9,7 +9,6 @@ import (
 
 	_ "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/abdukhashimov/exporter_psql_clickhouse/config"
-	"github.com/abdukhashimov/exporter_psql_clickhouse/pkg/cron"
 	"github.com/abdukhashimov/exporter_psql_clickhouse/pkg/exporter"
 	"github.com/abdukhashimov/exporter_psql_clickhouse/pkg/logger"
 	"github.com/abdukhashimov/exporter_psql_clickhouse/pkg/logger/factory"
@@ -47,14 +46,17 @@ func init() {
 	}
 
 	exporterObj := exporter.New(db, conn, cfg, bot)
-
-	cronJob := cron.New(exporterObj)
-	err = cronJob.RunTableExporter(cfg.Exporter.ExportPerid, cfg.Exporter.TableName)
+	err = exporterObj.Export("towns")
 	if err != nil {
 		panic(err)
 	}
+	// cronJob := cron.New(exporterObj)
+	// err = cronJob.RunTableExporter(cfg.Exporter.ExportPerid, cfg.Exporter.TableName)
+	// if err != nil {
+	// 	panic(err)
+	// }
 
-	cronJob.Start()
+	// cronJob.Start()
 }
 
 func main() {

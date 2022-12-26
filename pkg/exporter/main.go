@@ -41,8 +41,8 @@ func New(psqlConn, cHouseConn *sqlx.DB, cfg *config.Config, bot *tgbotapi.BotAPI
 var (
 	countTransactions      = "select count(1) from %s;"
 	selectListofIds        = "select code from %s limit $1 offset $2;"
-	transferDataQuery      = "insert into %s (code, article, name, department) select code, article, name, department from postgresql($1, $2, $3, $4, $5) LIMIT $6 OFFSET $7;"
-	updateManyTransactions = "update %s set soft_delete = true where code in (?)"
+	transferDataQuery      = "insert into %s (code, article, name, department) select code, article, name, department from postgresql('$1', $2, $3, $4, $5) LIMIT $6 OFFSET $7;"
+	updateManyTransactions = "update %s set soft_delete = true where code in (?);"
 )
 
 func (e *Export) Export(tableName string) error {
@@ -61,7 +61,7 @@ func (e *Export) Export(tableName string) error {
 		return err
 	}
 
-	rowCountCeil := int(math.Ceil(float64(rowCount) / transferRowCount))
+	rowCountCeil := int(math.Ceil(float64(rowCount)/transferRowCount)) * transferRowCount
 
 	for row := 0; row < rowCountCeil; row += transferRowCount {
 		var (
@@ -108,6 +108,14 @@ func (e *Export) Export(tableName string) error {
 			return err
 		}
 
+		err = cHTx.Commit()
+		if err != nil {
+			err = cHTx.Rollback()
+			if err != nil {
+				return err
+			}
+		}
+
 		qry, args, err := sqlx.In(addTableName(updateManyTransactions, tableName), ids)
 		if err != nil {
 			return err
@@ -121,6 +129,14 @@ func (e *Export) Export(tableName string) error {
 			}
 
 			err = cHTx.Rollback()
+			if err != nil {
+				return err
+			}
+		}
+
+		err = tx.Commit()
+		if err != nil {
+			err = tx.Rollback()
 			if err != nil {
 				return err
 			}
