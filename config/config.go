@@ -37,8 +37,9 @@ type Config struct {
 	}
 
 	Exporter struct {
-		TableName   string `env:"EXPORTING_TABLE_NAME"`
-		ExportPerid string `env:"EXPORTING_PERIOD,default='*/1 * * * *'"`
+		TableName        string `env:"EXPORTING_TABLE_NAME"`
+		ExportPerid      string `env:"EXPORTING_PERIOD,default='*/1 * * * *'"`
+		TelegramBotToken string `env:"EXPORTING_BOT_TOKEN"`
 	}
 
 	Clickhouse struct {
