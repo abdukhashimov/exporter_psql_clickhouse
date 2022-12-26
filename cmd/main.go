@@ -49,7 +49,10 @@ func init() {
 	exporterObj := exporter.New(db, conn, cfg, bot)
 
 	cronJob := cron.New(exporterObj)
-	cronJob.RunTableExporter(cfg.Exporter.ExportPerid, cfg.Exporter.TableName)
+	err = cronJob.RunTableExporter(cfg.Exporter.ExportPerid, cfg.Exporter.TableName)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func main() {
