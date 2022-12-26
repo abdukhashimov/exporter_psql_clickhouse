@@ -96,7 +96,7 @@ func (e *Export) Export(tableName string) error {
 		_, err = cHTx.ExecContext(
 			ctx,
 			addTableName(transferDataQuery, tableName),
-			fmt.Sprintf("%s:%d", e.cfg.PsqlConfig.Host, e.cfg.PsqlConfig.Port),
+			e.cfg.Network.PsqlAddress,
 			e.cfg.PsqlConfig.Database,
 			tableName,
 			e.cfg.PsqlConfig.User,

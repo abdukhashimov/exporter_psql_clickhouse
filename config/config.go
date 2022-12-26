@@ -36,6 +36,13 @@ type Config struct {
 		ConnString string
 	}
 
+	Network struct {
+		PsqlHost string `env:"PSQL_HOST,default=postgres-container"`
+		PsqlPort int    `env:"PSQL_PORT,default=5432"`
+
+		PsqlAddress string
+	}
+
 	Exporter struct {
 		TableName            string `env:"EXPORTING_TABLE_NAME"`
 		ExportPerid          string `env:"EXPORTING_PERIOD,default=*/1 * * * *"`
@@ -87,6 +94,7 @@ func Load() *Config {
 
 	cfg.PsqlConfig.ConnString = cfg.makePSQLConnString()
 	cfg.Clickhouse.ConnString = cfg.makeClickHouseConnString()
+	cfg.Network.PsqlAddress = fmt.Sprintf("%s:%d", cfg.Network.PsqlHost, cfg.Network.PsqlPort)
 
 	return &cfg
 }
