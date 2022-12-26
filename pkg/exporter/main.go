@@ -12,7 +12,7 @@ import (
 )
 
 const (
-	transferRowCount        = 100000
+	transferRowCount        = 10000
 	contextDeadlineDuration = 7
 )
 
@@ -93,7 +93,7 @@ func (e *Export) Export(tableName string) error {
 			return err
 		}
 
-		if _, err = e.psqlConn.Exec(qry, args); err != nil {
+		if _, err = e.psqlConn.Exec(e.psqlConn.Rebind(qry), args...); err != nil {
 			return err
 		}
 
