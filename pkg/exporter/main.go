@@ -101,6 +101,8 @@ func (e *Export) Export(tableName string) error {
 			tableName,
 			e.cfg.PsqlConfig.User,
 			e.cfg.PsqlConfig.Passwrod,
+			transferRowCount,
+			row,
 		)
 		if err != nil {
 			return err
