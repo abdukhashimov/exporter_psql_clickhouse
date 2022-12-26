@@ -8,6 +8,7 @@ import (
 
 	"github.com/abdukhashimov/exporter_psql_clickhouse/config"
 	"github.com/abdukhashimov/exporter_psql_clickhouse/pkg/logger"
+	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 	"github.com/jmoiron/sqlx"
 )
@@ -25,6 +26,7 @@ type Export struct {
 	psqlConn   *sqlx.DB
 	cHouseConn *sqlx.DB
 	cfg        *config.Config
+	tbBot      *tgbotapi.BotAPI
 }
 
 func New(psqlConn, cHouseConn *sqlx.DB, cfg *config.Config) Exporter {
@@ -44,7 +46,8 @@ var (
 
 func (e *Export) Export(tableName string) error {
 	var (
-		rowCount int
+		rowCount            int
+		successfullRowCount int
 	)
 
 	logger.Log.Info("exporter started")
@@ -121,6 +124,13 @@ func (e *Export) Export(tableName string) error {
 		}
 
 		logger.Log.Infof("successfully transferred from [%d - %d)", row, row+transferRowCount)
+		successfullRowCount += row
+
+		message := tgbotapi.NewMessage(e.cfg.Exporter.TelegramBotChannelID, fmt.Sprintf("%d/%d", successfullRowCount, rowCount))
+		_, err = e.tbBot.Send(message)
+		if err != nil {
+			logger.Log.Error("failed to publish the message to telegram chat", err)
+		}
 	}
 
 	return nil
