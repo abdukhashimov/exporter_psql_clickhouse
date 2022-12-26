@@ -16,6 +16,7 @@ func New(exporter exporter.Exporter) *CronJob {
 }
 
 func (c *CronJob) RunTableExporter(cronPeriod string, tableName string) error {
+	logger.Log.Info("run table exporter executed")
 	_, err := c.cronJob.AddFunc(cronPeriod, func() {
 		err := c.exporter.Export(tableName)
 		logger.Log.Error("failed to run the given function", err)
