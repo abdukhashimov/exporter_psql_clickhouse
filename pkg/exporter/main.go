@@ -41,7 +41,7 @@ func New(psqlConn, cHouseConn *sqlx.DB, cfg *config.Config, bot *tgbotapi.BotAPI
 var (
 	countTransactions      = "select count(1) from %s;"
 	selectListofIds        = "select code from %s limit $1 offset $2;"
-	transferDataQuery      = "insert into %s (code, article, name, department) select code, article, name, department from postgresql('$1', $2, $3, $4, $5) LIMIT $6 OFFSET $7;"
+	transferDataQuery      = "insert into %s (code, article, name, department) select code, article, name, department from postgresql('postgres-container:5432', 'sample', 'towns', 'postgres', 'postgres') LIMIT $1 OFFSET $2;"
 	updateManyTransactions = "update %s set soft_delete = true where code in (?);"
 )
 
@@ -96,11 +96,6 @@ func (e *Export) Export(tableName string) error {
 		_, err = cHTx.ExecContext(
 			ctx,
 			addTableName(transferDataQuery, tableName),
-			e.cfg.Network.PsqlAddress,
-			e.cfg.PsqlConfig.Database,
-			tableName,
-			e.cfg.PsqlConfig.User,
-			e.cfg.PsqlConfig.Passwrod,
 			transferRowCount,
 			row,
 		)
