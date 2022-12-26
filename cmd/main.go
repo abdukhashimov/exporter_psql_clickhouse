@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"os/signal"
 	"sync"
@@ -10,6 +9,8 @@ import (
 
 	_ "github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/abdukhashimov/exporter_psql_clickhouse/config"
+	"github.com/abdukhashimov/exporter_psql_clickhouse/pkg/cron"
+	"github.com/abdukhashimov/exporter_psql_clickhouse/pkg/exporter"
 	"github.com/abdukhashimov/exporter_psql_clickhouse/pkg/logger"
 	"github.com/abdukhashimov/exporter_psql_clickhouse/pkg/logger/factory"
 	"github.com/jmoiron/sqlx"
@@ -38,7 +39,10 @@ func init() {
 		panic(err)
 	}
 
-	fmt.Println(db, conn)
+	exporterObj := exporter.New(db, conn, cfg)
+
+	cronJob := cron.New(exporterObj)
+	cronJob.RunTableExporter(cfg.Exporter.ExportPerid, cfg.Exporter.TableName)
 }
 
 func main() {

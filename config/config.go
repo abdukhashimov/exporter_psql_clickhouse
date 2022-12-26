@@ -36,6 +36,11 @@ type Config struct {
 		ConnString string
 	}
 
+	Exporter struct {
+		TableName   string `env:"EXPORTING_TABLE_NAME"`
+		ExportPerid string `env:"EXPORTING_PERIOD,default='*/1 * * * *'"`
+	}
+
 	Clickhouse struct {
 		Host string `env:"CLICKHOUSE_ADDRESS,default=localhost"`
 		Port int    `env:"CLICKHOUSE_PORT,default=9000"`
