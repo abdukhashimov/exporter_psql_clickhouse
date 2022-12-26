@@ -68,7 +68,7 @@ func main() {
 
 	wg.Add(1)
 	go func(wg *sync.WaitGroup) {
-		logger.Log.Info("shutting down")
+		logger.Log.Info("\nshutting down")
 
 		logger.Log.Info("shutdown successfully called")
 
