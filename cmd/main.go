@@ -53,6 +53,8 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
+
+	cronJob.Start()
 }
 
 func main() {

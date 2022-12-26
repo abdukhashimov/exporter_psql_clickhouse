@@ -27,3 +27,7 @@ func (c *CronJob) RunTableExporter(cronPeriod string, tableName string) error {
 
 	return nil
 }
+
+func (c *CronJob) Start() {
+	c.cronJob.Start()
+}
