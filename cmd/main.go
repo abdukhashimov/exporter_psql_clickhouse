@@ -13,7 +13,6 @@ import (
 	"github.com/abdukhashimov/exporter_psql_clickhouse/pkg/exporter"
 	"github.com/abdukhashimov/exporter_psql_clickhouse/pkg/logger"
 	"github.com/abdukhashimov/exporter_psql_clickhouse/pkg/logger/factory"
-	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -31,11 +30,6 @@ func init() {
 
 	logger.Log.Info("set logger successfully...")
 
-	bot, err := tgbotapi.NewBotAPI(cfg.Exporter.TelegramBotToken)
-	if err != nil {
-		logger.Log.Fatal("could not start telegram bot")
-	}
-
 	db, err := sqlx.Connect("postgres", cfg.PsqlConfig.ConnString)
 	if err != nil {
 		panic(err)
@@ -46,7 +40,7 @@ func init() {
 		panic(err)
 	}
 
-	exporterObj := exporter.New(db, conn, cfg, bot)
+	exporterObj := exporter.New(db, conn, cfg, nil)
 	cronJob := cron.New(exporterObj)
 	err = cronJob.RunTableExporter(cfg.Exporter.ExportPerid, cfg.Exporter.TableName)
 	if err != nil {

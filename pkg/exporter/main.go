@@ -97,12 +97,6 @@ func (e *Export) Export(tableName string) error {
 		}
 
 		logger.Log.Infof("successfully transferred from [%d - %d)", row, row+transferRowCount)
-
-		message := tgbotapi.NewMessage(e.cfg.Exporter.TelegramBotChannelID, fmt.Sprintf("%d/%d", row, rowCount))
-		_, err = e.tbBot.Send(message)
-		if err != nil {
-			logger.Log.Error("failed to publish the message to telegram chat", err)
-		}
 	}
 
 	return nil
