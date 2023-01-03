@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	transferRowCount        = 10000
+	transferRowCount        = 100000
 	contextDeadlineDuration = 7
+	psqlUpdateCount         = 10000
 )
 
 type Exporter interface {
@@ -37,9 +38,9 @@ func New(psqlConn, cHouseConn *sqlx.DB, cfg *config.Config, bot *tgbotapi.BotAPI
 }
 
 var (
-	countTransactions      = "select count(1) from %s;"
+	countTransactions      = "select count(1) from %s where soft_delete=false;"
 	selectListofIds        = "select code from %s WHERE soft_delete=false limit $1 offset $2"
-	transferDataQuery      = "insert into towns (code, article, name, department) select code, article, name, department from postgresql('postgres-container:5432', 'sample', 'towns', 'postgres', 'postgres') LIMIT $1 OFFSET $2"
+	transferDataQuery      = "insert into towns (code, article, name, department, soft_delete) select code, article, name, department, soft_delete from postgresql('psql-db-1:5432', 'export', 'towns', 'postgres', 'postgres') WHERE soft_delete='0' LIMIT $1 OFFSET $2"
 	updateManyTransactions = "update %s set soft_delete = true where code in (?);"
 )
 
@@ -87,19 +88,34 @@ func (e *Export) Export(tableName string) error {
 			return err
 		}
 
-		qry, args, err := sqlx.In(addTableName(updateManyTransactions, tableName), ids)
-		if err != nil {
-			return err
+		arrays := chunkBy(ids, psqlUpdateCount)
+		for _, array := range arrays {
+			fmt.Println(len(array))
+			if len(array) == 0 {
+				continue
+			}
+
+			qry, args, err := sqlx.In(addTableName(updateManyTransactions, tableName), array)
+			if err != nil {
+				return err
+			}
+
+			if _, err = e.psqlConn.Exec(e.psqlConn.Rebind(qry), args...); err != nil {
+				return err
+			}
 		}
 
-		if _, err = e.psqlConn.Exec(e.psqlConn.Rebind(qry), args...); err != nil {
-			return err
-		}
-
-		logger.Log.Infof("successfully transferred from [%d - %d)", row, row+transferRowCount)
+		logger.Log.Infof("successfully transferred from [%d - %d)", row, len(ids)+row)
 	}
 
 	return nil
+}
+
+func chunkBy[T any](items []T, chunkSize int) (chunks [][]T) {
+	for chunkSize < len(items) {
+		items, chunks = items[chunkSize:], append(chunks, items[0:chunkSize:chunkSize])
+	}
+	return append(chunks, items)
 }
 
 func addTableName(query string, tableName string) string {
