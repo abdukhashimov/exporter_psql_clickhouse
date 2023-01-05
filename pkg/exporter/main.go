@@ -90,7 +90,6 @@ func (e *Export) Export(tableName string) error {
 
 		arrays := chunkBy(ids, psqlUpdateCount)
 		for _, array := range arrays {
-			fmt.Println(len(array))
 			if len(array) == 0 {
 				continue
 			}
