@@ -38,10 +38,10 @@ func New(psqlConn, cHouseConn *sqlx.DB, cfg *config.Config, bot *tgbotapi.BotAPI
 }
 
 var (
-	countTransactions      = "select count(1) from %s where soft_delete=false;"
-	selectListofIds        = "select code from %s WHERE soft_delete=false limit $1 offset $2"
-	transferDataQuery      = "insert into towns (code, article, name, department, soft_delete) select code, article, name, department, soft_delete from postgresql('psql-db-1:5432', 'export', 'towns', 'postgres', 'postgres') WHERE soft_delete='0' LIMIT $1 OFFSET $2"
-	updateManyTransactions = "update %s set soft_delete = true where code in (?);"
+	countTransactions      = "select count(1) from %s where deleted_at is not null;"
+	selectListofIds        = "select code from %s WHERE delete_at is null limit $1 offset $2"
+	transferDataQuery      = "insert into towns (code, article, name, department, soft_delete) select code, article, name, department, deleted_at from postgresql('psql-db-1:5432', 'export', 'towns', 'postgres', 'postgres') WHERE deleted_at is not null LIMIT $1 OFFSET $2"
+	updateManyTransactions = "update %s set deleted_at = now() where code in (?);"
 )
 
 func (e *Export) Export(tableName string) error {
