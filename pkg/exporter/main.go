@@ -44,7 +44,7 @@ var (
 		%s (id, user_id, balls, level_id, step, deleted_at, updated_at, created_at)
 		select id, user_id, balls, level_id, step, deleted_at, updated_at, created_at
 		from postgresql('%s', %s, %s, %s, %s)
-		WHERE deleted_at is not null LIMIT $1 OFFSET $2`
+		WHERE deleted_at is null LIMIT $1 OFFSET $2`
 	updateManyTransactions = "update %s set deleted_at = now() where id in (?);"
 )
 
