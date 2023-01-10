@@ -38,15 +38,29 @@ func New(psqlConn, cHouseConn *sqlx.DB, cfg *config.Config, bot *tgbotapi.BotAPI
 }
 
 var (
-	countTransactions      = "select count(1) from %s where soft_delete=false;"
-	selectListofIds        = "select code from %s WHERE soft_delete=false limit $1 offset $2"
-	transferDataQuery      = "insert into towns (code, article, name, department, soft_delete) select code, article, name, department, soft_delete from postgresql('psql-db-1:5432', 'export', 'towns', 'postgres', 'postgres') WHERE soft_delete='0' LIMIT $1 OFFSET $2"
-	updateManyTransactions = "update %s set soft_delete = true where code in (?);"
+	countTransactions = "select count(1) from %s where deleted_at is null;"
+	selectListofIds   = "select id from %s WHERE deleted_at is null limit $1 offset $2"
+	transferDataQuery = `insert into 
+		%s (id, user_id, balls, level_id, step, deleted_at, updated_at, created_at)
+		select id, user_id, balls, level_id, step, deleted_at, updated_at, created_at
+		from postgresql('%s', %s, %s, %s, %s)
+		WHERE deleted_at is null LIMIT $1 OFFSET $2`
+	updateManyTransactions = "update %s set deleted_at = now() where id in (?);"
 )
 
 func (e *Export) Export(tableName string) error {
 	var (
 		rowCount int
+	)
+
+	transferDataQuery = fmt.Sprintf(
+		transferDataQuery,
+		tableName,
+		e.cfg.Network.PsqlAddress,
+		e.cfg.PsqlConfig.Database,
+		tableName,
+		e.cfg.PsqlConfig.User,
+		e.cfg.PsqlConfig.Passwrod,
 	)
 
 	logger.Log.Info("exporter started")
@@ -79,11 +93,7 @@ func (e *Export) Export(tableName string) error {
 			ids = append(ids, id)
 		}
 
-		_, err = e.cHouseConn.Exec(
-			transferDataQuery,
-			transferRowCount,
-			row,
-		)
+		_, err = e.cHouseConn.Exec(transferDataQuery, transferRowCount, row)
 		if err != nil {
 			return err
 		}
