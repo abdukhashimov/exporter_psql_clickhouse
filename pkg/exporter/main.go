@@ -38,26 +38,29 @@ func New(psqlConn, cHouseConn *sqlx.DB, cfg *config.Config, bot *tgbotapi.BotAPI
 }
 
 var (
-	countTransactions = "select count(1) from %s where deleted_at is not null;"
-	selectListofIds   = "select id from %s WHERE delete_at is null limit $1 offset $2"
+	countTransactions = "select count(1) from %s where deleted_at is null;"
+	selectListofIds   = "select id from %s WHERE deleted_at is null limit $1 offset $2"
 	transferDataQuery = `insert into 
-		:tablename (id, user_id, balls, level_id, step, deleted_at, updated_at, created_at)
+		%s (id, user_id, balls, level_id, step, deleted_at, updated_at, created_at)
 		select id, user_id, balls, level_id, step, deleted_at, updated_at, created_at
-		from postgresql(:network_host, :database, :tablename, :psql_user, :psql_password)
-		WHERE deleted_at is not null LIMIT :limit OFFSET :offset`
+		from postgresql('%s', %s, %s, %s, %s)
+		WHERE deleted_at is not null LIMIT $1 OFFSET $2`
 	updateManyTransactions = "update %s set deleted_at = now() where id in (?);"
 )
 
 func (e *Export) Export(tableName string) error {
 	var (
 		rowCount int
-		args     = map[string]any{
-			"network_host":  e.cfg.Network.PsqlAddress,
-			"database":      e.cfg.PsqlConfig.Database,
-			"tablename":     e.cfg.Exporter.TableName,
-			"psql_user":     e.cfg.PsqlConfig.User,
-			"psql_password": e.cfg.PsqlConfig.Passwrod,
-		}
+	)
+
+	transferDataQuery = fmt.Sprintf(
+		transferDataQuery,
+		tableName,
+		e.cfg.Network.PsqlAddress,
+		e.cfg.PsqlConfig.Database,
+		tableName,
+		e.cfg.PsqlConfig.User,
+		e.cfg.PsqlConfig.Passwrod,
 	)
 
 	logger.Log.Info("exporter started")
@@ -90,9 +93,7 @@ func (e *Export) Export(tableName string) error {
 			ids = append(ids, id)
 		}
 
-		args["limit"] = transferRowCount
-		args["offset"] = row
-		_, err = e.cHouseConn.NamedExec(transferDataQuery, args)
+		_, err = e.cHouseConn.Exec(transferDataQuery, transferRowCount, row)
 		if err != nil {
 			return err
 		}

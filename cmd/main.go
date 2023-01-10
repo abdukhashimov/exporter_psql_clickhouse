@@ -40,7 +40,7 @@ func init() {
 	}
 
 	exporterObj := exporter.New(db, conn, cfg, nil)
-	err = exporterObj.Export("towns")
+	err = exporterObj.Export(cfg.Exporter.TableName)
 	if err != nil {
 		panic(err)
 	}
