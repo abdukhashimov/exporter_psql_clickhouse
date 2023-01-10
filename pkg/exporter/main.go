@@ -93,7 +93,7 @@ func (e *Export) Export(tableName string) error {
 			ids = append(ids, id)
 		}
 
-		_, err = e.cHouseConn.Exec(transferDataQuery, transferRowCount, row)
+		_, err = e.cHouseConn.Exec(transferDataQuery, transferRowCount, transferRowCount)
 		if err != nil {
 			return err
 		}
