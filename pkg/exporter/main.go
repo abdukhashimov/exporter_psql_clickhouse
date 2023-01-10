@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	transferRowCount        = 100000
+	transferRowCount        = 40000
 	contextDeadlineDuration = 7
-	psqlUpdateCount         = 10000
+	psqlUpdateCount         = 40000
 )
 
 type Exporter interface {
@@ -39,12 +39,12 @@ func New(psqlConn, cHouseConn *sqlx.DB, cfg *config.Config, bot *tgbotapi.BotAPI
 
 var (
 	countTransactions = "select count(1) from %s where deleted_at is null;"
-	selectListofIds   = "select id from %s WHERE deleted_at is null limit $1 offset $2"
+	selectListofIds   = "select id from %s WHERE deleted_at is null limit $1"
 	transferDataQuery = `insert into 
 		%s (id, user_id, balls, level_id, step, deleted_at, updated_at, created_at)
 		select id, user_id, balls, level_id, step, deleted_at, updated_at, created_at
 		from postgresql('%s', %s, %s, %s, %s)
-		WHERE deleted_at is null LIMIT $1 OFFSET $2`
+		WHERE deleted_at is null LIMIT $1`
 	updateManyTransactions = "update %s set deleted_at = now() where id in (?);"
 )
 
@@ -79,7 +79,7 @@ func (e *Export) Export(tableName string) error {
 			id  string
 		)
 
-		rows, err := e.psqlConn.Query(addTableName(selectListofIds, tableName), transferRowCount, row)
+		rows, err := e.psqlConn.Query(addTableName(selectListofIds, tableName), transferRowCount)
 		if err != nil {
 			return err
 		}
@@ -93,25 +93,18 @@ func (e *Export) Export(tableName string) error {
 			ids = append(ids, id)
 		}
 
-		_, err = e.cHouseConn.Exec(transferDataQuery, transferRowCount, transferRowCount)
+		_, err = e.cHouseConn.Exec(transferDataQuery, transferRowCount)
 		if err != nil {
 			return err
 		}
 
-		arrays := chunkBy(ids, psqlUpdateCount)
-		for _, array := range arrays {
-			if len(array) == 0 {
-				continue
-			}
+		qry, args, err := sqlx.In(addTableName(updateManyTransactions, tableName), ids)
+		if err != nil {
+			return err
+		}
 
-			qry, args, err := sqlx.In(addTableName(updateManyTransactions, tableName), array)
-			if err != nil {
-				return err
-			}
-
-			if _, err = e.psqlConn.Exec(e.psqlConn.Rebind(qry), args...); err != nil {
-				return err
-			}
+		if _, err = e.psqlConn.Exec(e.psqlConn.Rebind(qry), args...); err != nil {
+			return err
 		}
 
 		logger.Log.Infof("successfully transferred from [%d - %d)", row, len(ids)+row)
