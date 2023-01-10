@@ -14,4 +14,4 @@ SELECT i,
     1,
     now(),
     now()
-FROM generate_series(1, 1000000) s(i)
+FROM generate_series(1, 1000355) s(i);
