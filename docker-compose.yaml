@@ -1,0 +1,75 @@
+version: "3.9"
+
+services:
+  exporter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+    environment:
+      PSQL_HOST: ${PSQL_HOST:-psql}
+      PSQL_USER: ${PSQL_USER}
+      PSQL_PASSWORD: ${PSQL_PASSWORD}
+      PSQL_DATABSE: ${PSQL_DATABSE}
+      PSQL_PORT: ${PSQL_PORT:-5432}
+      PSQL_SSL_MODE: ${PSQL_SSL_MODE}
+
+      CLICKHOUSE_ADDRESS: ${CLICKHOUSE_ADDRESS}
+      CLICKHOUSE_DATABASE: ${CLICKHOUSE_DATABASE}
+      CLICKHOUSE_USERNAME: ${CLICKHOUSE_USERNAME}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD}
+
+      EXPORTING_TABLE_NAME: ${EXPORTING_TABLE_NAME}
+      EXPORTING_PERIOD: ${EXPORTING_PERIOD:-*/2 * * * *}
+
+      PSQL_NETWORK_HOST: ${PSQL_NETWORK_HOST}
+      PSQL_NETWORK_PORT: ${PSQL_NETWORK_PORT:-5432}
+  psql:
+    image: postgres:latest
+    container_name: postgres-container
+    ports:
+      - 5432:5432/tcp
+    environment:
+      POSTGRES_DB: ${PSQL_DATABSE}
+      POSTGRES_PASSWORD: ${PSQL_PASSWORD}
+    volumes:
+      - /var/lib/postgres
+      - ./dbscripts/postgres:/docker-entrypoint-initdb.d
+  ch_server:
+    image: yandex/clickhouse-server
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - ./db:/var/lib/clickhouse
+    networks:
+      - ch_ntw
+  ch_client:
+    image: yandex/clickhouse-client
+    entrypoint:
+      - /bin/sleep
+    command:
+      - infinity
+    networks:
+      - ch_ntw
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: abdukhashimov@yandex.ru
+      PGADMIN_DEFAULT_PASSWORD: password
+    ports:
+      - "5000:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
+networks:
+  ch_ntw:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.222.1.0/24
+
+volumes:
+  pgadmin_data:
