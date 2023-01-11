@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"net/http"
 	"os"
 	"os/signal"
 	"sync"
@@ -13,6 +14,7 @@ import (
 	"github.com/abdukhashimov/exporter_psql_clickhouse/pkg/exporter"
 	"github.com/abdukhashimov/exporter_psql_clickhouse/pkg/logger"
 	"github.com/abdukhashimov/exporter_psql_clickhouse/pkg/logger/factory"
+	"github.com/gin-gonic/gin"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
@@ -49,7 +51,19 @@ func init() {
 	cronJob.Start()
 }
 
+func api() {
+	r := gin.Default()
+	r.GET("/ping", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "pong",
+		})
+	})
+	r.Run()
+}
+
 func main() {
+	go api()
+
 	c := make(chan os.Signal, 1)
 	signal.Notify(c, os.Interrupt)
 
