@@ -35,3 +35,8 @@ push-image:
 	@echo ⌛ pushing the docker image...
 	docker push ${REGISTRY}/${PROJECT_NAME}/${APP}:${TAG}
 	@echo ✅ pushing the docker image done
+
+.PHONY: service-up
+service-up:
+	@echo ⌛ service up...
+	

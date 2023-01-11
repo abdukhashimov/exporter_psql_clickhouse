@@ -24,7 +24,7 @@ services:
       EXPORTING_PERIOD: ${EXPORTING_PERIOD:-*/2 * * * *}
 
       PSQL_NETWORK_HOST: ${PSQL_NETWORK_HOST}
-      PSQL_NETWORK_PORT: ${PSQL_NETWORK_PORT}
+      PSQL_NETWORK_PORT: ${PSQL_NETWORK_PORT:-5432}
   psql:
     image: postgres:latest
     container_name: postgres-container
@@ -70,3 +70,6 @@ networks:
     ipam:
       config:
         - subnet: 10.222.1.0/24
+
+volumes:
+  pgadmin_data:
