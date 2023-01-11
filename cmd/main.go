@@ -52,13 +52,15 @@ func init() {
 }
 
 func api() {
+	cfg := config.Load()
+
 	r := gin.Default()
 	r.GET("/ping", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"message": "pong",
 		})
 	})
-	r.Run()
+	r.Run(cfg.Project.Address)
 }
 
 func main() {

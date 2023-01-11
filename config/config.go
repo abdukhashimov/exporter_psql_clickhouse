@@ -23,6 +23,10 @@ type Config struct {
 
 	Project struct {
 		Mode string `env:"APPLICATION_MODE,default=DEVELOPMENT"`
+		Host string `env:"PROJECT_HOST,default=localhost"`
+		Port int    `env:"PROJECT_PORT,default=5432"`
+
+		Address string
 	}
 
 	PsqlConfig struct {
@@ -94,6 +98,7 @@ func Load() *Config {
 
 	cfg.PsqlConfig.ConnString = cfg.makePSQLConnString()
 	cfg.Clickhouse.ConnString = cfg.makeClickHouseConnString()
+	cfg.Project.Address = cfg.makeAddress()
 	cfg.Network.PsqlAddress = fmt.Sprintf("%s:%d", cfg.Network.PsqlHost, cfg.Network.PsqlPort)
 
 	return &cfg
@@ -120,6 +125,10 @@ func (c *Config) makeClickHouseConnString() string {
 		c.Clickhouse.Auth.Username,
 		c.Clickhouse.Auth.Password,
 	)
+}
+
+func (c *Config) makeAddress() string {
+	return fmt.Sprintf("%s:%d", c.Project.Host, c.Project.Port)
 }
 
 func getAppMode() AppMode {
